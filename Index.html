@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Exam</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #f4f6f9; }
+    .container { max-width: 600px; margin: auto; padding: 20px; }
+    h2 { text-align: center; color: #333; }
+    .question { display: none; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .active { display: block; }
+    label { display: block; margin: 8px 0; padding: 10px; background: #eef2f7; border-radius: 6px; cursor: pointer; }
+    input[type="radio"] { margin-right: 8px; }
+    .footer { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; }
+    button { flex: 1; margin: 5px; padding: 12px; border: none; border-radius: 6px; background: #4a90e2; color: #fff; font-size: 14px; cursor: pointer; }
+    button:hover { background: #357abd; }
+    #result { text-align: center; margin-top: 20px; padding: 20px; background: #dff0d8; border-radius: 8px; font-size: 18px; display: none; }
+    #result h3 { color: #3c763d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📘 Online Quiz Exam</h2>
+    <div id="quiz"></div>
+    <div class="footer">
+      <button onclick="prevQuestion()">⬅ Previous</button>
+      <button onclick="nextQuestion()">➡ Next</button>
+      <button onclick="saveAndNext()">💾 Save & Next</button>
+      <button onclick="submitQuiz()">✅ Submit</button>
+    </div>
+    <div id="result"></div>
+  </div>
+
+<script>
+// CSV file path (आप अपनी CSV file का नाम यहाँ दें)
+const csvFile = "questions.csv";
+
+let questions = [];
+let current = 0;
+let userAnswers = [];
+
+// CSV पढ़ने का function
+async function loadCSV() {
+  const response = await fetch(csvFile);
+  const data = await response.text();
+  const rows = data.trim().split("\n");
+  
+  questions = rows.map(row => {
+    const cols = row.split(",");
+    return {
+      q: cols[0],
+      options: [cols[1], cols[2], cols[3], cols[4]],
+      answer: parseInt(cols[5]) // सही option का index
+    };
+  });
+
+  // Random 30 questions चुनना
+  questions = shuffleArray(questions).slice(0, 30);
+  userAnswers = Array(questions.length).fill(null);
+  showQuestion(current);
+}
+
+// Array shuffle करने का function
+function shuffleArray(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function showQuestion(index) {
+  const quizDiv = document.getElementById("quiz");
+  quizDiv.innerHTML = `
+    <div class="question active">
+      <p><strong>${questions[index].q}</strong></p>
+      ${questions[index].options.map((opt,i)=>`
+        <label><input type="radio" name="q${index}" value="${i}" ${userAnswers[index]===i?"checked":""}> ${opt}</label>
+      `).join("")}
+    </div>
+  `;
+}
+
+function nextQuestion() {
+  if(current < questions.length-1){ current++; showQuestion(current); }
+}
+
+function prevQuestion() {
+  if(current > 0){ current--; showQuestion(current); }
+}
+
+function saveAndNext() {
+  const selected = document.querySelector(`input[name="q${current}"]:checked`);
+  if(selected){ userAnswers[current] = parseInt(selected.value); }
+  nextQuestion();
+}
+
+function submitQuiz() {
+  let score = 0;
+  userAnswers.forEach((ans,i)=>{ if(ans===questions[i].answer) score++; });
+  document.getElementById("result").style.display = "block";
+  document.getElementById("result").innerHTML = `<h3>🎉 Result: ${score}/${questions.length}</h3>
+    <p>${score>=20 ? "Great job! Keep it up 👍" : "Keep practicing, you’ll improve 💪"}</p>`;
+}
+
+// Load CSV on page start
+loadCSV();
+</script>
+</body>
+</html>
